@@ -103,6 +103,50 @@ BT /${fontName} 12 Tf 50 20 Td [(after)] TJ ET`;
   assert.equal((await PDFDocument.load(pv.bytes)).getPages()[0].getRotation().angle, 90);
   console.log('preview OK');
 
+  // Page selection
+  assert.deepEqual(core.parsePages('', 5), [0, 1, 2, 3, 4]);
+  assert.deepEqual(core.parsePages('1-2, 4', 5), [0, 1, 3]);
+  assert.deepEqual(core.parsePages('4-', 5), [3, 4]);
+  assert.deepEqual(core.parsePages('-2', 5), [0, 1]);
+  assert.deepEqual(core.parsePages('odd', 5), [0, 2, 4]);
+  assert.deepEqual(core.parsePages('even', 5), [1, 3]);
+  assert.deepEqual(core.parsePages('last', 5), [4]);
+  assert.throws(() => core.parsePages('abc', 5), /not a valid page range/);
+  assert.throws(() => core.parsePages('9', 5), /None of the chosen pages/);
+  const sel = await core.addWatermark(srcBytes, { text: 'SEL', pages: '2,4' });
+  assert.equal(sel.stampedPages, 2);
+  { const d = await PDFDocument.load(sel.bytes);
+    assert(!(await pageContent(d, 0)).includes('/Watermark'));
+    assert((await pageContent(d, 1)).includes('/Watermark'));
+    assert(!(await pageContent(d, 2)).includes('/Watermark'));
+    assert((await pageContent(d, 3)).includes('/Watermark')); }
+  console.log('page selection OK');
+
+  // Stamp fields, filled per page
+  assert(core.hasFields('Rev {rev}') && !core.hasFields('DRAFT'));
+  const fld = await core.addWatermark(srcBytes, { text: '{file} {name} rev {rev} {date} p{page}/{pages}', name: 'CL', rev: 'B', date: '2026-10-30' }, null, { file: 'E2803.pdf' });
+  { const d = await PDFDocument.load(fld.bytes);
+    for (let i = 0; i < 4; i++) {
+      const hex = Buffer.from(`E2803 CL rev B 2026-10-30 p${i + 1}/4`).toString('hex').toUpperCase();
+      assert((await pageContent(d, i)).toUpperCase().includes(hex), 'fields filled on page ' + (i + 1));
+    } }
+  console.log('fields OK');
+
+  // Image watermark (1×1 PNG and a tiny JPG), removable like text
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+  for (const rotation of [0, 45, 225]) for (const position of ['top', 'center', 'bottom']) {
+    const im = await core.addWatermark(srcBytes, { type: 'image', imageScale: 30, rotation, position }, { image: { bytes: png } });
+    assert.equal(im.overflowPages.length, 0, `image fits ${rotation}/${position}`);
+    const d = await PDFDocument.load(im.bytes);
+    assert((await pageContent(d, 0)).includes(' Do'), 'image drawn');
+    assert.equal((await core.removeWatermarks(im.bytes)).removed, 4);
+  }
+  await assert.rejects(core.addWatermark(srcBytes, { type: 'image' }, {}), /Choose an image/);
+  await assert.rejects(core.addWatermark(srcBytes, { type: 'image' }, { image: { bytes: new Uint8Array([1, 2, 3, 4]) } }), /Only PNG and JPG/);
+  const ipv = await core.previewPage(await core.loadPdf(srcBytes), 0, { type: 'image', pages: '2' }, { image: { bytes: png } });
+  assert.equal(ipv.skipped, true);
+  console.log('image OK');
+
   // Garbage input
   await assert.rejects(core.addWatermark(new Uint8Array([1, 2, 3]), {}), /could not be read/);
   

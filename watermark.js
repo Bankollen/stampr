@@ -39,6 +39,7 @@
   };
 
   const DEFAULTS = {
+    type: 'text', // 'text' | 'image'
     text: 'DRAFT',
     font: 'helvetica-bold',
     fontSize: 72,
@@ -46,7 +47,64 @@
     opacity: 0.3,
     position: 'center', // 'top' | 'center' | 'bottom'
     rotation: 45, // degrees, counter-clockwise
+    imageScale: 40, // image width in % of the page width
+    pages: '', // '' = all pages, otherwise e.g. "1-3, 5", "first", "last", "odd", "even"
+    name: '',
+    rev: '',
+    date: '', // '' = today
   };
+
+  // Stamp fields: {date} {name} {rev} {file} {page} {pages}
+  const FIELD_RE = /\{(date|name|rev|file|page|pages)\}/gi;
+
+  function hasFields(text) {
+    FIELD_RE.lastIndex = 0;
+    const r = FIELD_RE.test(text || '');
+    FIELD_RE.lastIndex = 0;
+    return r;
+  }
+
+  function today() {
+    const d = new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  }
+
+  function fillFields(text, ctx) {
+    return text.replace(FIELD_RE, (m, k) => {
+      const v = ctx[k.toLowerCase()];
+      return v == null ? '' : String(v);
+    });
+  }
+
+  // Returns a sorted array of 0-based page indices. Throws a readable error for bad input.
+  function parsePages(spec, count) {
+    const s = String(spec || '').trim().toLowerCase();
+    const all = Array.from({ length: count }, (_, i) => i);
+    if (!s || s === 'all') return all;
+    if (s === 'first') return count ? [0] : [];
+    if (s === 'last') return count ? [count - 1] : [];
+    if (s === 'odd') return all.filter((i) => i % 2 === 0);
+    if (s === 'even') return all.filter((i) => i % 2 === 1);
+    const set = new Set();
+    for (const part of s.split(/[,;]+/)) {
+      const p = part.trim();
+      if (!p) continue;
+      let m;
+      if ((m = /^(\d+)$/.exec(p))) {
+        const n = +m[1];
+        if (n >= 1 && n <= count) set.add(n - 1);
+      } else if ((m = /^(\d*)\s*-\s*(\d*)$/.exec(p)) && (m[1] || m[2])) {
+        const a = m[1] ? +m[1] : 1;
+        const b = m[2] ? +m[2] : count;
+        for (let n = Math.max(1, a); n <= Math.min(count, b); n++) set.add(n - 1);
+      } else {
+        throw new Error(`"${part.trim()}" is not a valid page range. Use e.g. 1-3, 5, 8-`);
+      }
+    }
+    if (!set.size) throw new Error('None of the chosen pages exist in this PDF.');
+    return Array.from(set).sort((a, b) => a - b);
+  }
 
   // ---------- adding ----------
 
@@ -64,13 +122,21 @@
 
   function normalizeSettings(s) {
     const out = Object.assign({}, DEFAULTS, s);
+    out.type = out.type === 'image' ? 'image' : 'text';
     out.text = String(out.text == null ? '' : out.text);
     out.fontSize = Math.min(1000, Math.max(1, Number(out.fontSize) || DEFAULTS.fontSize));
     out.opacity = Math.min(1, Math.max(0, Number(out.opacity)));
     if (!Number.isFinite(out.opacity)) out.opacity = DEFAULTS.opacity;
     out.rotation = Number(out.rotation) || 0;
+    out.imageScale = Math.min(100, Math.max(1, Number(out.imageScale) || DEFAULTS.imageScale));
     if (!['top', 'center', 'bottom'].includes(out.position)) out.position = 'center';
     return out;
+  }
+
+  // Older callers passed the custom font bytes directly as the third argument.
+  function normalizeAssets(assets) {
+    if (assets instanceof Uint8Array || assets instanceof ArrayBuffer) return { fontBytes: assets };
+    return assets || {};
   }
 
   async function embedFont(doc, settings, customFontBytes) {
@@ -84,10 +150,21 @@
     return doc.embedFont(f.std);
   }
 
+  async function embedImage(doc, image) {
+    if (!image || !image.bytes) throw new Error('Choose an image (PNG or JPG) first.');
+    const b = image.bytes;
+    try {
+      if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return await doc.embedPng(b);
+      if (b[0] === 0xff && b[1] === 0xd8) return await doc.embedJpg(b);
+    } catch (e) {
+      throw new Error('This image could not be read. Try saving it again as PNG.');
+    }
+    throw new Error('Only PNG and JPG images are supported.');
+  }
+
   // Measures the text block. Throws a readable error if the font can't encode a character.
-  function measure(font, settings) {
-    const size = settings.fontSize;
-    const lines = settings.text.split(/\r\n|\r|\n/);
+  function measure(font, text, size) {
+    const lines = text.split(/\r\n|\r|\n/);
     let widths;
     try {
       widths = lines.map((l) => font.widthOfTextAtSize(l, size));
@@ -106,19 +183,27 @@
     };
   }
 
-  // Where to draw each line on a page, honouring the page's crop box and /Rotate so that
-  // "top", "center", "bottom" and the angle refer to the page as it is shown on screen.
-  function layoutOnPage(page, block, settings) {
+  // The page as it is shown on screen: crop box and /Rotate taken into account, so that
+  // "top", "center", "bottom" and the angle refer to what the reader sees.
+  function pageGeometry(page) {
     const crop = page.getCropBox();
     const pageRot = Math.round(normAngle(page.getRotation().angle) / 90) % 4 * 90;
     const sideways = pageRot === 90 || pageRot === 270;
-    const visW = sideways ? crop.height : crop.width;
-    const visH = sideways ? crop.width : crop.height;
+    return {
+      crop, pageRot,
+      visW: sideways ? crop.height : crop.width,
+      visH: sideways ? crop.width : crop.height,
+    };
+  }
 
+  // Places a W×H box (rotated by settings.rotation) on the page. Returns a function that maps
+  // box-local coordinates (origin at the box centre) to PDF user space, plus whether it fits.
+  function placeBox(geo, W, H, settings) {
     const a = settings.rotation * Math.PI / 180;
     const c = Math.cos(a), s = Math.sin(a);
-    const hx = Math.abs(c) * block.W / 2 + Math.abs(s) * block.H / 2;
-    const hy = Math.abs(s) * block.W / 2 + Math.abs(c) * block.H / 2;
+    const hx = Math.abs(c) * W / 2 + Math.abs(s) * H / 2;
+    const hy = Math.abs(s) * W / 2 + Math.abs(c) * H / 2;
+    const { visW, visH, pageRot, crop } = geo;
 
     const cx = visW / 2;
     let cy = visH / 2;
@@ -128,7 +213,9 @@
     const needH = settings.position === 'center' ? 2 * hy : 2 * hy + MARGIN;
     const fits = 2 * hx <= visW + 0.5 && needH <= visH + 0.5;
 
-    const toUser = (vx, vy) => {
+    const toUser = (lx, ly) => {
+      const vx = cx + lx * c - ly * s;
+      const vy = cy + lx * s + ly * c;
       let x, y;
       if (pageRot === 90) { x = visH - vy; y = vx; }
       else if (pageRot === 180) { x = visW - vx; y = visH - vy; }
@@ -136,42 +223,77 @@
       else { x = vx; y = vy; }
       return { x: x + crop.x, y: y + crop.y };
     };
-
-    const draws = [];
-    block.lines.forEach((line, i) => {
-      if (!line.trim()) return;
-      const lx = -block.widths[i] / 2;
-      const ly = block.H / 2 - block.ascent - i * block.lineH;
-      const p = toUser(cx + lx * c - ly * s, cy + lx * s + ly * c);
-      draws.push({ text: line, x: p.x, y: p.y, angle: settings.rotation + pageRot });
-    });
-    return { draws, fits };
+    return { toUser, fits, angle: settings.rotation + pageRot };
   }
 
-  function stampPage(doc, page, font, block, settings) {
-    const { draws, fits } = layoutOnPage(page, block, settings);
-    if (!draws.length) return fits;
-    const color = hexToRgb(settings.color);
+  // Runs draw() so that everything it draws ends up in one marked, removable content stream.
+  function drawMarked(doc, page, draw) {
     // pdf-lib only creates a fresh content stream per PDFPage object; force a new one so the
     // watermark always lives in a stream of its own that removal can drop as a whole.
     page.contentStream = undefined;
     page.contentStreamRef = undefined;
-    for (const d of draws) {
-      page.drawText(d.text, {
-        x: d.x, y: d.y, size: block.size, font, color,
-        opacity: settings.opacity, rotate: degrees(d.angle),
-      });
-    }
+    draw();
     const cs = page.contentStream;
-    cs.dict.set(MARK, PDFBool.True);
-    cs.operators.unshift(PDFOperator.of('BDC', [
-      PDFName.of('Artifact'),
-      doc.context.obj({ Type: 'Pagination', Subtype: 'Watermark' }),
-    ]));
-    cs.operators.push(PDFOperator.of('EMC'));
+    if (cs) {
+      cs.dict.set(MARK, PDFBool.True);
+      cs.operators.unshift(PDFOperator.of('BDC', [
+        PDFName.of('Artifact'),
+        doc.context.obj({ Type: 'Pagination', Subtype: 'Watermark' }),
+      ]));
+      cs.operators.push(PDFOperator.of('EMC'));
+    }
     page.contentStream = undefined;
     page.contentStreamRef = undefined;
-    return fits;
+  }
+
+  // Prepares whatever is shared by all pages (font or image), returns stamp(page, ctx) → fits.
+  async function makeStamper(doc, settings, assets) {
+    if (settings.type === 'image') {
+      const img = await embedImage(doc, assets.image);
+      return (page) => {
+        const geo = pageGeometry(page);
+        const W = geo.visW * settings.imageScale / 100;
+        const H = W * img.height / img.width;
+        const box = placeBox(geo, W, H, settings);
+        const p = box.toUser(-W / 2, -H / 2);
+        drawMarked(doc, page, () => page.drawImage(img, {
+          x: p.x, y: p.y, width: W, height: H, opacity: settings.opacity, rotate: degrees(box.angle),
+        }));
+        return box.fits;
+      };
+    }
+
+    if (!settings.text.trim()) throw new Error('Enter a watermark text.');
+    const font = await embedFont(doc, settings, assets.fontBytes);
+    const color = hexToRgb(settings.color);
+    const fields = hasFields(settings.text);
+    const fixed = fields ? null : measure(font, settings.text, settings.fontSize);
+    return (page, ctx) => {
+      const block = fixed || measure(font, fillFields(settings.text, ctx), settings.fontSize);
+      const box = placeBox(pageGeometry(page), block.W, block.H, settings);
+      drawMarked(doc, page, () => {
+        block.lines.forEach((line, i) => {
+          if (!line.trim()) return;
+          const p = box.toUser(-block.widths[i] / 2, block.H / 2 - block.ascent - i * block.lineH);
+          page.drawText(line, {
+            x: p.x, y: p.y, size: block.size, font, color,
+            opacity: settings.opacity, rotate: degrees(box.angle),
+          });
+        });
+      });
+      return box.fits;
+    };
+  }
+
+  function fieldContext(settings, ctx, pageIndex, pageCount) {
+    return {
+      date: settings.date || today(),
+      name: settings.name,
+      rev: settings.rev,
+      file: (ctx.file || '').replace(/\.pdf$/i, ''),
+      page: pageIndex + 1,
+      pages: pageCount,
+    };
   }
 
   async function loadPdf(bytes) {
@@ -185,32 +307,42 @@
     }
   }
 
-  // Returns { bytes, pageCount, overflowPages: [1-based page numbers where it doesn't fit] }.
-  async function addWatermark(pdfBytes, rawSettings, customFontBytes) {
+  // assets: { fontBytes, image: { bytes } }   ctx: { file }
+  // Returns { bytes, pageCount, stampedPages, overflowPages: [1-based page numbers] }.
+  async function addWatermark(pdfBytes, rawSettings, assets, ctx) {
     const settings = normalizeSettings(rawSettings);
-    if (!settings.text.trim()) throw new Error('Enter a watermark text.');
+    assets = normalizeAssets(assets);
+    ctx = ctx || {};
     const doc = await loadPdf(pdfBytes);
-    const font = await embedFont(doc, settings, customFontBytes);
-    const block = measure(font, settings);
+    const count = doc.getPageCount();
+    const targets = parsePages(settings.pages, count);
+    const stamp = await makeStamper(doc, settings, assets);
+    const pages = doc.getPages();
     const overflowPages = [];
-    doc.getPages().forEach((page, i) => {
-      if (!stampPage(doc, page, font, block, settings)) overflowPages.push(i + 1);
-    });
-    return { bytes: await doc.save(), pageCount: doc.getPageCount(), overflowPages };
+    for (const i of targets) {
+      if (!stamp(pages[i], fieldContext(settings, ctx, i, count))) overflowPages.push(i + 1);
+    }
+    return { bytes: await doc.save(), pageCount: count, stampedPages: targets.length, overflowPages };
   }
 
   // Fast preview: copies one page of an already loaded document into a new one-page PDF.
-  async function previewPage(srcDoc, pageIndex, rawSettings, customFontBytes) {
+  // Returns { bytes, fits, skipped } — skipped when the page isn't in settings.pages.
+  async function previewPage(srcDoc, pageIndex, rawSettings, assets, ctx) {
     const settings = normalizeSettings(rawSettings);
+    assets = normalizeAssets(assets);
+    ctx = ctx || {};
+    const count = srcDoc.getPageCount();
     const doc = await PDFDocument.create();
     const [page] = await doc.copyPages(srcDoc, [pageIndex]);
     doc.addPage(page);
-    let fits = true;
-    if (settings.text.trim()) {
-      const font = await embedFont(doc, settings, customFontBytes);
-      fits = stampPage(doc, page, font, measure(font, settings), settings);
+    const targets = parsePages(settings.pages, count);
+    let fits = true, skipped = !targets.includes(pageIndex);
+    const empty = settings.type === 'text' && !settings.text.trim();
+    if (!skipped && !empty) {
+      const stamp = await makeStamper(doc, settings, assets);
+      fits = stamp(page, fieldContext(settings, ctx, pageIndex, count));
     }
-    return { bytes: await doc.save(), fits };
+    return { bytes: await doc.save(), fits, skipped };
   }
 
   // ---------- removing ----------
@@ -399,6 +531,7 @@
 
   return {
     FONTS, DEFAULTS, loadPdf, addWatermark, previewPage, removeWatermarks,
-    _internal: { stripWatermarkBlocks, normalizeSettings },
+    hasFields, parsePages,
+    _internal: { stripWatermarkBlocks, normalizeSettings, fillFields },
   };
 });

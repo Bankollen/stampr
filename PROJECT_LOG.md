@@ -27,6 +27,15 @@ eller en logga) på PDF-filer. Fristående projekt, skilt från Bankollen/traqr.
   Borttagning tar bort märkta streams, BDC-block med `/Subtype /Watermark` (även namngivna via
   /Properties, t.ex. Acrobats) och `/Watermark`-annotationer. Stämplar som bara är vanlig text/bild
   i sidan kan inte skiljas ut och lämnas — det står tydligt i UI:t.
+- **2026-10-30** — Finansiering: inga annonser, ingen spårning. Gratisversion + **Stampr Pro** för
+  **$12/år** eller **$29 livstid** (ingen månadsplan — avgifterna äter små belopp). Betalning via
+  **Lemon Squeezy** (merchant of record, sköter moms). Licensen kontrolleras direkt från webbläsaren
+  mot Lemon Squeezys License API (CORS tillåter alla origins — verifierat), så ingen egen server
+  behövs. Klientside-spärr: går att kringgå, accepterat.
+- **2026-10-30** — Gratis: textstämpel, mallar, sidval, borttagning, en fil i taget. Pro: flera filer
+  (ZIP), bild/logga, fält ({date} {name} {rev} {file} {page} {pages}), permanent läge (sidor
+  rastreras i 200 dpi, max 16 Mpx/sida), sparade profiler. Gratisanvändare kan förhandsvisa
+  Pro-funktioner; Pro-dialogen kommer vid nedladdning.
 
 ## Ändringslogg
 
@@ -39,11 +48,23 @@ eller en logga) på PDF-filer. Fristående projekt, skilt från Bankollen/traqr.
   med knepiga strängar och inline-bild). Verifierad i Edge headless (playwright-core i scratchpad):
   uppladdning, förhandsvisning inkl. sida med /Rotate 90, nedladdning, borttagning, mobillayout.
   PDF.js 6 har ingen `PDFDocumentProxy.destroy()` — använd `loadingTask.destroy()`.
+- **2026-10-30** — Första commit (94c0474) pushad till https://github.com/Bankollen/stampr (publikt
+  repo, branch `master`). Lokal git-identitet satt i repot (lindh).
+- **2026-10-30** — Pro byggt: `license.js`, `config.js`, `privacy.html`, `terms.html`, `legal.js`,
+  `vendor/fflate.min.js`; `watermark.js` utökad (bildstämpel, fält, sidval `parsePages`); `app.js`
+  omskriven (flera filer, profiler, permanent läge, Pro-dialog, `?license=KEY` efter köp);
+  prissektion på sidan. `npm test` utökad (sidval, fält, bild). Verifierad i Edge med mockat
+  Lemon Squeezy (fel nyckel, annan butik, aktivering, ZIP med bild, fält + permanent, profil,
+  borttagning av licens). Inte committat.
 
 ## Öppna frågor
 
-- Driftsättning: GitHub-repo + GitHub Pages + DNS för wstampr.com (ej gjort).
-- Framtida funktioner: logga/bild som stämpel, välja sidor, flera filer samtidigt.
+- Driftsättning: GitHub Pages (Settings → Pages, master / root, custom domain wstampr.com) + DNS
+  hos Loopia (4 A-poster 185.199.108–111.153 på @, CNAME www → bankollen.github.io) — ej gjort.
+- Lemon Squeezy: skapa butik + två produkter, fyll i `config.js` (storeId, productIds, checkout-länkar,
+  contactEmail). Tills dess visar sidan "Pro is launching soon".
+- Villkoren lovar 14 dagars återbetalning och "lifetime = så länge Stampr finns" — bekräfta med användaren.
+- Profiler sparar inte själva bilden (bara inställningarna).
 - Behövs ett "permanent" läge (sidorna rastreras till bilder så att stämpeln inte går att ta
   bort, men texten blir inte längre sökbar)?
 - Ska namnet som visas på sidan vara "Stampr" eller "Wstampr" (domänen är wstampr.com)?

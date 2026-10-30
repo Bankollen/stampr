@@ -30,10 +30,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
   display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   padding: 14px 28px; background: var(--brand); color: #fff;
 }
-.brand { display: flex; align-items: center; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
 .brand img { background: #fff; border-radius: 6px; padding: 2px; }
 .brand-name { font-size: 1.45rem; font-weight: 700; letter-spacing: 0.01em; }
-.tagline { margin: 0; opacity: 0.85; font-size: 0.95rem; }
+.tagline { margin: 0 auto 0 0; opacity: 0.85; font-size: 0.95rem; }
 
 main { flex: 1; width: 100%; max-width: 1280px; margin: 0 auto; padding: 20px 24px 8px; }
 
@@ -91,7 +91,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .segmented label { position: relative; cursor: pointer; }
 .segmented label + label { border-left: 1px solid #c7ced8; }
 .segmented input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
-.segmented span { display: block; text-align: center; padding: 8px 4px; }
+.segmented label > span { display: block; text-align: center; padding: 8px 4px; height: 100%; }
 .segmented input:checked + span { background: var(--brand); color: #fff; }
 .segmented input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: -3px; }
 
@@ -159,4 +159,83 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
   .preview-stage { height: 70vh; min-height: 320px; }
   .site-header { padding: 12px 18px; }
   main { padding: 16px 14px 8px; }
+}
+
+/* ---------- Pro ---------- */
+.pro-btn {
+  border: 1px solid rgba(255,255,255,.6); background: transparent; color: #fff; padding: 7px 16px;
+  border-radius: 999px; font-weight: 700; cursor: pointer;
+}
+.pro-btn:hover { background: rgba(255,255,255,.12); }
+body.is-pro .pro-btn { border-color: transparent; background: rgba(255,255,255,.15); }
+.pro-tag {
+  display: inline-block; font-size: 0.66rem; font-weight: 700; letter-spacing: .04em; vertical-align: 1px;
+  padding: 1px 6px; border-radius: 999px; background: #fde7df; color: #b23a12;
+}
+body.is-pro .pro-tag { display: none; }
+
+.segmented.two { grid-template-columns: 1fr 1fr; }
+.segmented input:checked + span .pro-tag { background: rgba(255,255,255,.2); color: #fff; }
+.row.three { grid-template-columns: 1fr 0.7fr 1.5fr; gap: 8px; }
+.row.three .field { margin-bottom: 6px; }
+.inline-row { display: flex; gap: 8px; align-items: center; }
+.inline-row select, .inline-row input { flex: 1; min-width: 0; }
+.btn.small { padding: 7px 12px; font-size: 0.88rem; flex: none; }
+.file-actions { display: flex; gap: 12px; flex: none; }
+.file-select { margin: 12px 0 0; }
+
+.fields-box { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.fields-box summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+.fields-box[open] summary { margin-bottom: 10px; }
+.fields-box .chips { margin-bottom: 10px; }
+.fields-box input { padding: 6px 8px; }
+
+.check { display: flex; gap: 10px; align-items: flex-start; margin: 4px 0 14px; cursor: pointer; font-size: 0.9rem; }
+.check input { margin-top: 3px; accent-color: var(--accent); }
+.check small { color: var(--muted); }
+
+.pricing { margin: 36px 0 10px; text-align: center; }
+.pricing h2 { font-size: 1.6rem; margin: 0 0 8px; }
+.pricing .lead { color: var(--muted); max-width: 640px; margin: 0 auto 24px; }
+.plans { display: grid; grid-template-columns: repeat(2, minmax(0, 340px)); gap: 20px; justify-content: center; text-align: left; }
+.plan { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; display: flex; flex-direction: column; }
+.plan.pro { border: 2px solid var(--accent); }
+.plan h3 { margin: 0; font-size: 1.1rem; }
+.plan .price { font-size: 2rem; font-weight: 800; margin: 8px 0 0; }
+.plan .price small { font-size: 0.9rem; font-weight: 500; color: var(--muted); }
+.plan .price-alt { margin: 2px 0 0; color: var(--muted); font-size: 0.9rem; }
+.plan ul { padding-left: 18px; margin: 16px 0; flex: 1; }
+.plan li { margin: 6px 0; font-size: 0.93rem; }
+.plan .price + ul { margin-top: 38px; }
+
+.pro-dialog { border: 0; border-radius: 14px; padding: 26px; width: min(460px, calc(100vw - 32px)); box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+.pro-dialog::backdrop { background: rgba(15, 23, 35, .45); }
+.pro-dialog h2 { margin: 0 0 12px; }
+.dialog-close { position: absolute; top: 10px; right: 12px; margin: 0; }
+.dialog-close button { border: 0; background: none; font-size: 1.6rem; cursor: pointer; color: var(--muted); line-height: 1; }
+.pro-reason { background: #fff7f4; color: #8a3410; border-radius: 8px; padding: 10px 12px; margin: 0 0 14px; font-size: 0.92rem; }
+.dialog-plans { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.plan-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 8px; border-radius: 10px;
+  background: var(--accent); color: #fff; text-decoration: none; font-size: 0.85rem;
+}
+.plan-btn strong { font-size: 1.35rem; }
+.plan-btn + .plan-btn { background: var(--brand); }
+.plan-btn:hover { filter: brightness(0.95); }
+.plan-btn.disabled { opacity: .45; cursor: not-allowed; }
+.small { font-size: 0.83rem; }
+.license-form { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.license-form label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; }
+.license-form input { font-family: ui-monospace, Consolas, monospace; font-size: 0.85rem; }
+.license-error { color: var(--err-ink); background: var(--err-bg); padding: 8px 10px; border-radius: 8px; font-size: 0.88rem; margin: 10px 0 0; }
+.pro-ok { color: var(--ok-ink); font-weight: 700; margin: 0 0 6px; }
+
+.legal { max-width: 760px; margin: 0 auto; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 28px 32px; line-height: 1.6; }
+.legal h1 { margin-top: 0; }
+.legal h2 { font-size: 1.1rem; margin-top: 26px; }
+
+@media (max-width: 860px) {
+  .plans { grid-template-columns: minmax(0, 1fr); }
+  .plan .price + ul { margin-top: 16px; }
+  .tagline { order: 3; width: 100%; }
 }

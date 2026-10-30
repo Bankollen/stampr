@@ -3,19 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Stampr — Watermark PDFs in your browser</title>
-  <meta name="description" content="Add or remove PDF watermarks for free. Everything runs in your browser — your files are never uploaded.">
+  <title>Stampr — Add or remove PDF watermarks. No uploads.</title>
+  <meta name="description" content="Add or remove PDF watermarks in your browser. No ads, no tracking, no uploads — your files never leave your device.">
   <link rel="canonical" href="https://wstampr.com/">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="site-header">
-    <div class="brand">
+    <a class="brand" href="./">
       <img src="favicon.svg" alt="" width="32" height="32">
       <span class="brand-name">Stampr</span>
-    </div>
-    <p class="tagline">Watermark PDFs in your browser. Your files never leave your device.</p>
+    </a>
+    <p class="tagline">No ads. No tracking. No uploads.</p>
+    <button type="button" class="pro-btn" id="pro-btn">Get Pro</button>
   </header>
 
   <main>
@@ -28,9 +29,9 @@
       <aside class="controls">
         <section class="card file-card">
           <label class="dropzone" id="dropzone">
-            <input type="file" id="file-input" accept="application/pdf,.pdf" hidden>
+            <input type="file" id="file-input" accept="application/pdf,.pdf" multiple hidden>
             <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3l5 5h-3v6h-4V8H7l5-5zm-7 14h14v4H5v-4z"/></svg>
-            <span class="dz-main">Drop a PDF here or <u>browse</u></span>
+            <span class="dz-main">Drop PDFs here or <u>browse</u></span>
             <span class="dz-sub">Processed locally — nothing is uploaded</span>
           </label>
           <div class="file-info" id="file-info" hidden>
@@ -38,7 +39,14 @@
               <strong id="file-name"></strong>
               <span id="file-pages"></span>
             </div>
-            <button type="button" class="link-btn" id="change-file">Change file</button>
+            <div class="file-actions">
+              <button type="button" class="link-btn" id="add-files">Add files</button>
+              <button type="button" class="link-btn" id="clear-files">Clear</button>
+            </div>
+          </div>
+          <div class="field file-select" id="file-select-wrap" hidden>
+            <label for="file-select">Preview file</label>
+            <select id="file-select"></select>
           </div>
         </section>
 
@@ -46,35 +54,137 @@
         <section class="card" id="panel-add" role="tabpanel" aria-labelledby="tab-add">
           <h2>Watermark settings</h2>
 
-          <div class="field">
-            <label for="wm-text">Text</label>
-            <textarea id="wm-text" rows="2" spellcheck="false" placeholder="e.g. DRAFT"></textarea>
-            <small>Press Enter for a new line.</small>
-          </div>
-
-          <div class="field">
-            <label for="wm-font">Font</label>
-            <select id="wm-font"></select>
-            <div class="custom-font" id="custom-font" hidden>
-              <label class="file-btn">
-                <input type="file" id="font-input" accept=".ttf,.otf,font/ttf,font/otf" hidden>
-                <span>Choose font file…</span>
-              </label>
-              <span id="font-name" class="muted">No font chosen (.ttf or .otf)</span>
+          <div class="field profiles">
+            <label for="profile-select">Saved profiles <span class="pro-tag">PRO</span></label>
+            <div class="inline-row">
+              <select id="profile-select"><option value="">—</option></select>
+              <button type="button" class="btn small" id="profile-save">Save</button>
+              <button type="button" class="btn small" id="profile-delete" disabled>Delete</button>
             </div>
           </div>
 
-          <div class="row">
-            <div class="field">
-              <label for="wm-size">Font size (pt)</label>
-              <input type="number" id="wm-size" min="1" max="1000" step="1">
+          <fieldset class="field">
+            <legend>Type</legend>
+            <div class="segmented two" id="wm-type">
+              <label><input type="radio" name="type" value="text"><span>Text</span></label>
+              <label><input type="radio" name="type" value="image"><span>Image / logo <span class="pro-tag">PRO</span></span></label>
             </div>
+          </fieldset>
+
+          <div id="text-settings">
             <div class="field">
-              <label for="wm-color">Font color</label>
-              <div class="color-row">
-                <input type="color" id="wm-color">
-                <input type="text" id="wm-color-hex" maxlength="7" spellcheck="false" aria-label="Hex color">
+              <label for="wm-template">Template</label>
+              <select id="wm-template">
+                <option value="">Choose a template…</option>
+                <optgroup label="General">
+                  <option>DRAFT</option>
+                  <option>CONFIDENTIAL</option>
+                  <option>COPY</option>
+                  <option>SAMPLE</option>
+                  <option>VOID</option>
+                  <option>APPROVED</option>
+                </optgroup>
+                <optgroup label="Engineering & construction">
+                  <option>PRELIMINARY</option>
+                  <option>NOT FOR CONSTRUCTION</option>
+                  <option>FOR REVIEW</option>
+                  <option>FOR INFORMATION ONLY</option>
+                  <option>AS-BUILT</option>
+                  <option>SUPERSEDED</option>
+                </optgroup>
+                <optgroup label="Swedish">
+                  <option>PRELIMINÄR</option>
+                  <option>UTKAST</option>
+                  <option>EJ FÖR BYGGNATION</option>
+                  <option>GRANSKNINGSHANDLING</option>
+                  <option>FÖRFRÅGNINGSUNDERLAG</option>
+                  <option>BYGGHANDLING</option>
+                  <option>RELATIONSHANDLING</option>
+                  <option>MAKULERAD</option>
+                </optgroup>
+                <optgroup label="With stamp fields (Pro)">
+                  <option value="DRAFT – {date}">DRAFT – {date}</option>
+                  <option value="FOR REVIEW&#10;{name} · {date} · Rev {rev}">FOR REVIEW / name · date · rev</option>
+                  <option value="NOT FOR CONSTRUCTION&#10;Rev {rev} – {date}">NOT FOR CONSTRUCTION / rev – date</option>
+                  <option value="{file} · Page {page} of {pages}">file · page x of y</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="wm-text">Text</label>
+              <textarea id="wm-text" rows="2" spellcheck="false" placeholder="e.g. DRAFT"></textarea>
+              <small>Press Enter for a new line.</small>
+            </div>
+
+            <details class="field fields-box" id="fields-box">
+              <summary>Stamp fields — date, name, revision… <span class="pro-tag">PRO</span></summary>
+              <div class="chips" id="field-chips" aria-label="Insert field">
+                <button type="button" data-field="{date}">Date</button>
+                <button type="button" data-field="{name}">Name</button>
+                <button type="button" data-field="{rev}">Revision</button>
+                <button type="button" data-field="{file}">File name</button>
+                <button type="button" data-field="{page}">Page</button>
+                <button type="button" data-field="{pages}">Page count</button>
               </div>
+              <div class="row three">
+                <div class="field">
+                  <label for="wm-name">Name</label>
+                  <input type="text" id="wm-name" placeholder="e.g. J. Smith">
+                </div>
+                <div class="field">
+                  <label for="wm-rev">Revision</label>
+                  <input type="text" id="wm-rev" placeholder="e.g. B">
+                </div>
+                <div class="field">
+                  <label for="wm-date">Date</label>
+                  <input type="date" id="wm-date">
+                </div>
+              </div>
+              <small>Click a field to insert it into the text. Leave the date empty to use today's date.</small>
+            </details>
+
+            <div class="field">
+              <label for="wm-font">Font</label>
+              <select id="wm-font"></select>
+              <div class="custom-font" id="custom-font" hidden>
+                <label class="file-btn">
+                  <input type="file" id="font-input" accept=".ttf,.otf,font/ttf,font/otf" hidden>
+                  <span>Choose font file…</span>
+                </label>
+                <span id="font-name" class="muted">No font chosen (.ttf or .otf)</span>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="field">
+                <label for="wm-size">Font size (pt)</label>
+                <input type="number" id="wm-size" min="1" max="1000" step="1">
+              </div>
+              <div class="field">
+                <label for="wm-color">Font color</label>
+                <div class="color-row">
+                  <input type="color" id="wm-color">
+                  <input type="text" id="wm-color-hex" maxlength="7" spellcheck="false" aria-label="Hex color">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="image-settings" hidden>
+            <div class="field">
+              <label>Image</label>
+              <div class="custom-font">
+                <label class="file-btn">
+                  <input type="file" id="image-input" accept="image/png,image/jpeg,.png,.jpg,.jpeg" hidden>
+                  <span>Choose image…</span>
+                </label>
+                <span id="image-name" class="muted">PNG or JPG — PNG keeps transparency</span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="wm-scale">Size <span class="value" id="wm-scale-val"></span></label>
+              <input type="range" id="wm-scale" min="5" max="100" step="1">
             </div>
           </div>
 
@@ -107,6 +217,17 @@
               <button type="button" data-deg="225">225°</button>
             </div>
           </div>
+
+          <div class="field">
+            <label for="wm-pages">Pages</label>
+            <input type="text" id="wm-pages" placeholder="All pages — or e.g. 1-3, 5, 8-, first, last, odd, even" spellcheck="false">
+          </div>
+
+          <label class="check">
+            <input type="checkbox" id="wm-permanent">
+            <span><strong>Make it permanent</strong> <span class="pro-tag">PRO</span><br>
+              <small>Pages are turned into images so the watermark can't be removed. Text will no longer be selectable or searchable.</small></span>
+          </label>
 
           <button type="button" class="btn-link-subtle" id="reset-settings">Reset to defaults</button>
 
@@ -157,16 +278,85 @@
         <p class="preview-warning" id="preview-warning" hidden></p>
       </section>
     </div>
+
+    <section class="pricing" id="pricing" aria-labelledby="pricing-title">
+      <h2 id="pricing-title">No ads. No tracking. No uploads.</h2>
+      <p class="lead">Stampr runs entirely in your browser, so your PDFs never leave your device — and with no servers to pay for, Pro costs a fraction of a typical PDF subscription.</p>
+      <div class="plans">
+        <div class="plan">
+          <h3>Free</h3>
+          <p class="price">$0</p>
+          <ul>
+            <li>Text watermarks — any text, font, size, color, position and angle</li>
+            <li>Templates</li>
+            <li>Choose which pages to stamp</li>
+            <li>Remove watermarks</li>
+            <li>One file at a time, as often as you like</li>
+          </ul>
+        </div>
+        <div class="plan pro">
+          <h3>Pro</h3>
+          <p class="price"><span data-price="yearly"></span> <small data-price="yearlyNote"></small></p>
+          <p class="price-alt">or <span data-price="lifetime"></span> <span data-price="lifetimeNote"></span></p>
+          <ul>
+            <li>Everything in Free</li>
+            <li><strong>Many files at once</strong> — download as one ZIP</li>
+            <li><strong>Image &amp; logo watermarks</strong></li>
+            <li><strong>Stamp fields</strong> — date, name, revision, file name, page numbers</li>
+            <li><strong>Permanent watermarks</strong> that can't be removed</li>
+            <li><strong>Saved profiles</strong> for your recurring stamps</li>
+          </ul>
+          <button type="button" class="btn primary" data-open-pro>Get Pro</button>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
-    <p>Stampr runs entirely in your browser. PDFs and fonts you choose are processed on your device and never sent anywhere.</p>
-    <p class="muted">Built with <a href="https://pdf-lib.js.org/" target="_blank" rel="noopener">pdf-lib</a> and <a href="https://mozilla.github.io/pdf.js/" target="_blank" rel="noopener">PDF.js</a>.</p>
+    <p>Your PDFs, fonts and images are processed on your device and never sent anywhere. Pro license checks send only your license key to our payment provider, Lemon Squeezy.</p>
+    <p class="muted"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · Built with <a href="https://pdf-lib.js.org/" target="_blank" rel="noopener">pdf-lib</a> and <a href="https://mozilla.github.io/pdf.js/" target="_blank" rel="noopener">PDF.js</a></p>
   </footer>
 
+  <dialog class="pro-dialog" id="pro-dialog" aria-labelledby="pro-title">
+    <form method="dialog" class="dialog-close"><button aria-label="Close">×</button></form>
+    <h2 id="pro-title">Stampr Pro</h2>
+    <p class="pro-reason" id="pro-reason" hidden></p>
+
+    <div id="pro-buy">
+      <div class="dialog-plans">
+        <a class="plan-btn" id="buy-yearly" target="_blank" rel="noopener">
+          <strong data-price="yearly"></strong> <span data-price="yearlyNote"></span>
+        </a>
+        <a class="plan-btn" id="buy-lifetime" target="_blank" rel="noopener">
+          <strong data-price="lifetime"></strong> <span data-price="lifetimeNote"></span>
+        </a>
+      </div>
+      <p class="muted small" id="buy-note">Secure checkout by Lemon Squeezy. You'll get a license key by email right after paying.</p>
+      <p class="muted small" id="not-on-sale" hidden>Pro is launching soon.</p>
+
+      <form class="license-form" id="license-form">
+        <label for="license-key">Already bought Pro? Enter your license key</label>
+        <div class="inline-row">
+          <input type="text" id="license-key" placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX" autocomplete="off" spellcheck="false">
+          <button type="submit" class="btn" id="license-activate">Activate</button>
+        </div>
+        <p class="license-error" id="license-error" hidden></p>
+      </form>
+    </div>
+
+    <div id="pro-active" hidden>
+      <p class="pro-ok">✓ Pro is active in this browser.</p>
+      <p class="muted small" id="pro-details"></p>
+      <button type="button" class="btn small" id="license-remove">Remove license from this browser</button>
+    </div>
+  </dialog>
+
+  <script src="config.js"></script>
   <script src="vendor/pdf-lib.min.js"></script>
   <script src="vendor/fontkit.umd.min.js"></script>
+  <script src="vendor/fflate.min.js"></script>
   <script src="watermark.js"></script>
+  <script src="license.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
