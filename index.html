@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stampr — Watermark PDFs in your browser</title>
+  <meta name="description" content="Add or remove PDF watermarks for free. Everything runs in your browser — your files are never uploaded.">
+  <link rel="canonical" href="https://wstampr.com/">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <img src="favicon.svg" alt="" width="32" height="32">
+      <span class="brand-name">Stampr</span>
+    </div>
+    <p class="tagline">Watermark PDFs in your browser. Your files never leave your device.</p>
+  </header>
+
+  <main>
+    <nav class="mode-tabs" role="tablist" aria-label="Mode">
+      <button role="tab" id="tab-add" aria-selected="true" aria-controls="panel-add" data-mode="add">Add watermark</button>
+      <button role="tab" id="tab-remove" aria-selected="false" aria-controls="panel-remove" data-mode="remove">Remove watermarks</button>
+    </nav>
+
+    <div class="workspace">
+      <aside class="controls">
+        <section class="card file-card">
+          <label class="dropzone" id="dropzone">
+            <input type="file" id="file-input" accept="application/pdf,.pdf" hidden>
+            <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3l5 5h-3v6h-4V8H7l5-5zm-7 14h14v4H5v-4z"/></svg>
+            <span class="dz-main">Drop a PDF here or <u>browse</u></span>
+            <span class="dz-sub">Processed locally — nothing is uploaded</span>
+          </label>
+          <div class="file-info" id="file-info" hidden>
+            <div class="file-meta">
+              <strong id="file-name"></strong>
+              <span id="file-pages"></span>
+            </div>
+            <button type="button" class="link-btn" id="change-file">Change file</button>
+          </div>
+        </section>
+
+        <!-- Add mode -->
+        <section class="card" id="panel-add" role="tabpanel" aria-labelledby="tab-add">
+          <h2>Watermark settings</h2>
+
+          <div class="field">
+            <label for="wm-text">Text</label>
+            <textarea id="wm-text" rows="2" spellcheck="false" placeholder="e.g. DRAFT"></textarea>
+            <small>Press Enter for a new line.</small>
+          </div>
+
+          <div class="field">
+            <label for="wm-font">Font</label>
+            <select id="wm-font"></select>
+            <div class="custom-font" id="custom-font" hidden>
+              <label class="file-btn">
+                <input type="file" id="font-input" accept=".ttf,.otf,font/ttf,font/otf" hidden>
+                <span>Choose font file…</span>
+              </label>
+              <span id="font-name" class="muted">No font chosen (.ttf or .otf)</span>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="wm-size">Font size (pt)</label>
+              <input type="number" id="wm-size" min="1" max="1000" step="1">
+            </div>
+            <div class="field">
+              <label for="wm-color">Font color</label>
+              <div class="color-row">
+                <input type="color" id="wm-color">
+                <input type="text" id="wm-color-hex" maxlength="7" spellcheck="false" aria-label="Hex color">
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="wm-opacity">Opacity <span class="value" id="wm-opacity-val"></span></label>
+            <input type="range" id="wm-opacity" min="0" max="100" step="1">
+          </div>
+
+          <fieldset class="field">
+            <legend>Position</legend>
+            <div class="segmented" id="wm-position">
+              <label><input type="radio" name="position" value="top"><span>Top</span></label>
+              <label><input type="radio" name="position" value="center"><span>Center</span></label>
+              <label><input type="radio" name="position" value="bottom"><span>Bottom</span></label>
+            </div>
+          </fieldset>
+
+          <div class="field">
+            <label for="wm-rotation">Rotation (degrees, counter-clockwise)</label>
+            <div class="rotation-row">
+              <input type="number" id="wm-rotation" min="-360" max="360" step="1">
+              <span class="unit">°</span>
+            </div>
+            <div class="chips" id="rotation-chips" aria-label="Quick rotation">
+              <button type="button" data-deg="0">0°</button>
+              <button type="button" data-deg="45">45°</button>
+              <button type="button" data-deg="90">90°</button>
+              <button type="button" data-deg="135">135°</button>
+              <button type="button" data-deg="180">180°</button>
+              <button type="button" data-deg="225">225°</button>
+            </div>
+          </div>
+
+          <button type="button" class="btn-link-subtle" id="reset-settings">Reset to defaults</button>
+
+          <div class="actions">
+            <button type="button" class="btn primary" id="download-add" disabled>Download watermarked PDF</button>
+          </div>
+        </section>
+
+        <!-- Remove mode -->
+        <section class="card" id="panel-remove" role="tabpanel" aria-labelledby="tab-remove" hidden>
+          <h2>Remove watermarks</h2>
+          <p class="muted">
+            Removes watermarks added with Stampr, and watermarks that are marked as watermarks inside
+            the PDF (for example ones added with Adobe Acrobat).
+          </p>
+          <p class="muted">
+            Text or images that were simply drawn onto the page, or flattened into a scan,
+            can't be told apart from the rest of the page and are left untouched.
+          </p>
+          <div class="actions">
+            <button type="button" class="btn primary" id="run-remove" disabled>Remove watermarks</button>
+            <button type="button" class="btn" id="download-remove" hidden>Download cleaned PDF</button>
+          </div>
+        </section>
+
+        <div class="message" id="message" role="status" aria-live="polite" hidden></div>
+      </aside>
+
+      <section class="preview" aria-label="Preview">
+        <div class="preview-bar">
+          <span class="preview-title" id="preview-title">Preview</span>
+          <div class="pager" id="pager" hidden>
+            <button type="button" id="prev-page" aria-label="Previous page">‹</button>
+            <span id="page-label"></span>
+            <button type="button" id="next-page" aria-label="Next page">›</button>
+          </div>
+        </div>
+        <div class="preview-stage" id="preview-stage">
+          <div class="placeholder" id="placeholder">
+            <div class="placeholder-page">
+              <span>DRAFT</span>
+            </div>
+            <p>Choose a PDF to see a preview.</p>
+          </div>
+          <canvas id="preview-canvas" hidden></canvas>
+          <div class="spinner" id="spinner" hidden></div>
+        </div>
+        <p class="preview-warning" id="preview-warning" hidden></p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>Stampr runs entirely in your browser. PDFs and fonts you choose are processed on your device and never sent anywhere.</p>
+    <p class="muted">Built with <a href="https://pdf-lib.js.org/" target="_blank" rel="noopener">pdf-lib</a> and <a href="https://mozilla.github.io/pdf.js/" target="_blank" rel="noopener">PDF.js</a>.</p>
+  </footer>
+
+  <script src="vendor/pdf-lib.min.js"></script>
+  <script src="vendor/fontkit.umd.min.js"></script>
+  <script src="watermark.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

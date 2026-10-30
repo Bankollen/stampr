@@ -1,0 +1,12 @@
+{
+  "name": "stampr",
+  "private": true,
+  "description": "Add and remove PDF watermarks in the browser. Static site — the browser loads vendor/ directly; npm is only used for tests.",
+  "scripts": {
+    "test": "node test/core.test.js"
+  },
+  "devDependencies": {
+    "@pdf-lib/fontkit": "1.1.1",
+    "pdf-lib": "1.17.1"
+  }
+}
