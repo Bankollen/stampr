@@ -36,6 +36,15 @@ eller en logga) på PDF-filer. Fristående projekt, skilt från Bankollen/traqr.
   (ZIP), bild/logga, fält ({date} {name} {rev} {file} {page} {pages}), permanent läge (sidor
   rastreras i 200 dpi, max 16 Mpx/sida), sparade profiler. Gratisanvändare kan förhandsvisa
   Pro-funktioner; Pro-dialogen kommer vid nedladdning.
+- **2026-10-30** — Användaren valde först Stripe + Cloudflare Worker framför Lemon Squeezy, men
+  beslutade sedan: **allt gratis tills vidare**, se om det kommer besökare innan betalning byggs.
+  `config.js` → `allFree: true` döljer all Pro-/pris-UI och släpper alla spärrar; Pro-koden
+  (Lemon Squeezy) ligger kvar. Byts betalningen till Stripe senare behövs en Worker för licenser.
+- **2026-10-30** — Besöksstatistik: Cloudflare Web Analytics (cookiefri), aktiveras genom att sätta
+  `cloudflareAnalyticsToken` i `config.js`; integritetssidan visar då automatiskt rätt text.
+- **2026-10-30** — Användaren: ta bort allt under verktyget och gör allt Pro-innehåll fritt. Pro-koden
+  (license.js, Pro-dialog, pristabell, allFree-flaggan) är **borttagen**, inte bara dold — finns i
+  commit 672c5bb om den behövs igen. Under verktyget finns bara länkarna Privacy · Terms.
 
 ## Ändringslogg
 
@@ -55,15 +64,22 @@ eller en logga) på PDF-filer. Fristående projekt, skilt från Bankollen/traqr.
   omskriven (flera filer, profiler, permanent läge, Pro-dialog, `?license=KEY` efter köp);
   prissektion på sidan. `npm test` utökad (sidval, fält, bild). Verifierad i Edge med mockat
   Lemon Squeezy (fel nyckel, annan butik, aktivering, ZIP med bild, fält + permanent, profil,
-  borttagning av licens). Inte committat.
+  borttagning av licens). Commit 672c5bb, pushad. GitHub Pages gör egna commits ("Create/Delete
+  CNAME") när domänen ändras i Settings → Pages — kör `git pull --rebase` före push.
+- **2026-10-30** — Gratisläge (`allFree`, `site.js`, `data-free-only`/`data-pro-only`/
+  `data-analytics-only` i HTML), ny ljus sticky header med "No ads / No tracking / No uploads",
+  ny logga (favicon.svg: orange ruta, dokument med snett stämpelband), cache-busting `?v=` på
+  egna filer (GitHub Pages cachar 10 min — gammal CSS gav blå länk och ostylad knapp live).
+- **2026-10-30** — Pro borttaget ur app.js/index.html/style.css/privacy/terms, license.js raderad,
+  config.js förenklad (analytics-token + contactEmail), vendor/fontkit.LICENSE tillagd (saknades).
+  Verifierat i Edge: inga Pro-element, ZIP med logga + permanent läge utan spärr, profil sparas.
 
 ## Öppna frågor
 
 - Driftsättning: GitHub Pages (Settings → Pages, master / root, custom domain wstampr.com) + DNS
   hos Loopia (4 A-poster 185.199.108–111.153 på @, CNAME www → bankollen.github.io) — ej gjort.
-- Lemon Squeezy: skapa butik + två produkter, fyll i `config.js` (storeId, productIds, checkout-länkar,
+- (Vilande) Lemon Squeezy: skapa butik + två produkter, fyll i `config.js` (storeId, productIds, checkout-länkar,
   contactEmail). Tills dess visar sidan "Pro is launching soon".
-- Villkoren lovar 14 dagars återbetalning och "lifetime = så länge Stampr finns" — bekräfta med användaren.
 - Profiler sparar inte själva bilden (bara inställningarna).
 - Behövs ett "permanent" läge (sidorna rastreras till bilder så att stämpeln inte går att ta
   bort, men texten blir inte längre sökbar)?

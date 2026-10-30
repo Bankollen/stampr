@@ -5,13 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Privacy — Stampr</title>
   <link rel="canonical" href="https://wstampr.com/privacy.html">
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="favicon.svg?v=20261030d" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css?v=20261030d">
+  <script src="config.js?v=20261030d"></script>
+  <script src="site.js?v=20261030d"></script>
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="./"><img src="favicon.svg" alt="" width="32" height="32"><span class="brand-name">Stampr</span></a>
-    <p class="tagline">No ads. No tracking. No uploads.</p>
+    <div class="header-inner">
+      <a class="brand" href="./" aria-label="Stampr home">
+        <img src="favicon.svg?v=20261030d" alt="" width="34" height="34">
+        <span class="brand-name">Stamp<span>r</span></span>
+      </a>
+      <ul class="promise" aria-label="Our promise">
+        <li>No ads</li>
+        <li>No tracking</li>
+        <li>No uploads</li>
+      </ul>
+    </div>
   </header>
   <main>
     <article class="legal">
@@ -23,10 +34,13 @@
         processed on your own device and are never uploaded to us or to anyone else.</p>
 
       <h2>No ads, no tracking, no cookies</h2>
-      <p>Stampr shows no ads, uses no analytics or tracking tools and sets no cookies.</p>
+      <p data-no-analytics>Stampr shows no ads, uses no analytics or tracking tools and sets no cookies.</p>
+      <p data-analytics-only>Stampr shows no ads and sets no cookies. To know how many people use Stampr we
+        count page visits with Cloudflare Web Analytics, which uses no cookies, doesn't follow you across
+        sites and doesn't identify you — we only see totals such as the number of visits per day and country.</p>
 
       <h2>What is stored in your browser</h2>
-      <p>Your watermark settings, any saved profiles and — if you have Pro — your license key are kept in
+      <p>Your watermark settings and any saved profiles are kept in
         your browser's local storage so they are there next time. They never leave your device except as
         described below, and you can delete them at any time by clearing this site's data in your browser.</p>
 
@@ -35,12 +49,9 @@
         <li><strong>GitHub Pages</strong> hosts the website. Like any web host, GitHub receives your IP address
           and browser details when you load the page. See the
           <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">GitHub privacy statement</a>.</li>
-        <li><strong>Cloudflare</strong> provides DNS for the domain only; your page visits do not pass through Cloudflare.</li>
-        <li><strong>Lemon Squeezy</strong> handles Pro purchases as the merchant of record. When you buy, you
-          give your payment and contact details to Lemon Squeezy, not to us; we receive your name, email
-          address and order details. When Pro is activated or re-checked, your browser sends your license key
-          and a short device label (such as "Chrome on Windows") to Lemon Squeezy. See the
-          <a href="https://www.lemonsqueezy.com/privacy" target="_blank" rel="noopener">Lemon Squeezy privacy policy</a>.</li>
+        <li><strong>Cloudflare</strong> provides DNS for the domain; your page visits do not pass through Cloudflare.<span data-analytics-only>
+          Cloudflare Web Analytics receives an anonymous, cookieless visit count from each page load. See the
+          <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare privacy policy</a>.</span></li>
       </ul>
 
       <h2>Contact</h2>
@@ -48,7 +59,6 @@
     </article>
   </main>
   <footer class="site-footer"><p class="muted"><a href="./">Back to Stampr</a> · <a href="terms.html">Terms</a></p></footer>
-  <script src="config.js"></script>
-  <script src="legal.js"></script>
+  <script src="legal.js?v=20261030d"></script>
 </body>
 </html>

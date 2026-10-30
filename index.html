@@ -6,17 +6,24 @@
   <title>Stampr — Add or remove PDF watermarks. No uploads.</title>
   <meta name="description" content="Add or remove PDF watermarks in your browser. No ads, no tracking, no uploads — your files never leave your device.">
   <link rel="canonical" href="https://wstampr.com/">
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="favicon.svg?v=20261030d" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css?v=20261030d">
+  <script src="config.js?v=20261030d"></script>
+  <script src="site.js?v=20261030d"></script>
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="./">
-      <img src="favicon.svg" alt="" width="32" height="32">
-      <span class="brand-name">Stampr</span>
-    </a>
-    <p class="tagline">No ads. No tracking. No uploads.</p>
-    <button type="button" class="pro-btn" id="pro-btn">Get Pro</button>
+    <div class="header-inner">
+      <a class="brand" href="./" aria-label="Stampr home">
+        <img src="favicon.svg?v=20261030d" alt="" width="34" height="34">
+        <span class="brand-name">Stamp<span>r</span></span>
+      </a>
+      <ul class="promise" aria-label="Our promise">
+        <li>No ads</li>
+        <li>No tracking</li>
+        <li>No uploads</li>
+      </ul>
+    </div>
   </header>
 
   <main>
@@ -55,7 +62,7 @@
           <h2>Watermark settings</h2>
 
           <div class="field profiles">
-            <label for="profile-select">Saved profiles <span class="pro-tag">PRO</span></label>
+            <label for="profile-select">Saved profiles</label>
             <div class="inline-row">
               <select id="profile-select"><option value="">—</option></select>
               <button type="button" class="btn small" id="profile-save">Save</button>
@@ -67,7 +74,7 @@
             <legend>Type</legend>
             <div class="segmented two" id="wm-type">
               <label><input type="radio" name="type" value="text"><span>Text</span></label>
-              <label><input type="radio" name="type" value="image"><span>Image / logo <span class="pro-tag">PRO</span></span></label>
+              <label><input type="radio" name="type" value="image"><span>Image / logo</span></label>
             </div>
           </fieldset>
 
@@ -102,7 +109,7 @@
                   <option>RELATIONSHANDLING</option>
                   <option>MAKULERAD</option>
                 </optgroup>
-                <optgroup label="With stamp fields (Pro)">
+                <optgroup label="With stamp fields">
                   <option value="DRAFT – {date}">DRAFT – {date}</option>
                   <option value="FOR REVIEW&#10;{name} · {date} · Rev {rev}">FOR REVIEW / name · date · rev</option>
                   <option value="NOT FOR CONSTRUCTION&#10;Rev {rev} – {date}">NOT FOR CONSTRUCTION / rev – date</option>
@@ -118,7 +125,7 @@
             </div>
 
             <details class="field fields-box" id="fields-box">
-              <summary>Stamp fields — date, name, revision… <span class="pro-tag">PRO</span></summary>
+              <summary>Stamp fields — date, name, revision…</summary>
               <div class="chips" id="field-chips" aria-label="Insert field">
                 <button type="button" data-field="{date}">Date</button>
                 <button type="button" data-field="{name}">Name</button>
@@ -225,7 +232,7 @@
 
           <label class="check">
             <input type="checkbox" id="wm-permanent">
-            <span><strong>Make it permanent</strong> <span class="pro-tag">PRO</span><br>
+            <span><strong>Make it permanent</strong><br>
               <small>Pages are turned into images so the watermark can't be removed. Text will no longer be selectable or searchable.</small></span>
           </label>
 
@@ -279,84 +286,16 @@
       </section>
     </div>
 
-    <section class="pricing" id="pricing" aria-labelledby="pricing-title">
-      <h2 id="pricing-title">No ads. No tracking. No uploads.</h2>
-      <p class="lead">Stampr runs entirely in your browser, so your PDFs never leave your device — and with no servers to pay for, Pro costs a fraction of a typical PDF subscription.</p>
-      <div class="plans">
-        <div class="plan">
-          <h3>Free</h3>
-          <p class="price">$0</p>
-          <ul>
-            <li>Text watermarks — any text, font, size, color, position and angle</li>
-            <li>Templates</li>
-            <li>Choose which pages to stamp</li>
-            <li>Remove watermarks</li>
-            <li>One file at a time, as often as you like</li>
-          </ul>
-        </div>
-        <div class="plan pro">
-          <h3>Pro</h3>
-          <p class="price"><span data-price="yearly"></span> <small data-price="yearlyNote"></small></p>
-          <p class="price-alt">or <span data-price="lifetime"></span> <span data-price="lifetimeNote"></span></p>
-          <ul>
-            <li>Everything in Free</li>
-            <li><strong>Many files at once</strong> — download as one ZIP</li>
-            <li><strong>Image &amp; logo watermarks</strong></li>
-            <li><strong>Stamp fields</strong> — date, name, revision, file name, page numbers</li>
-            <li><strong>Permanent watermarks</strong> that can't be removed</li>
-            <li><strong>Saved profiles</strong> for your recurring stamps</li>
-          </ul>
-          <button type="button" class="btn primary" data-open-pro>Get Pro</button>
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer class="site-footer">
-    <p>Your PDFs, fonts and images are processed on your device and never sent anywhere. Pro license checks send only your license key to our payment provider, Lemon Squeezy.</p>
-    <p class="muted"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · Built with <a href="https://pdf-lib.js.org/" target="_blank" rel="noopener">pdf-lib</a> and <a href="https://mozilla.github.io/pdf.js/" target="_blank" rel="noopener">PDF.js</a></p>
+    <p class="muted"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></p>
   </footer>
 
-  <dialog class="pro-dialog" id="pro-dialog" aria-labelledby="pro-title">
-    <form method="dialog" class="dialog-close"><button aria-label="Close">×</button></form>
-    <h2 id="pro-title">Stampr Pro</h2>
-    <p class="pro-reason" id="pro-reason" hidden></p>
-
-    <div id="pro-buy">
-      <div class="dialog-plans">
-        <a class="plan-btn" id="buy-yearly" target="_blank" rel="noopener">
-          <strong data-price="yearly"></strong> <span data-price="yearlyNote"></span>
-        </a>
-        <a class="plan-btn" id="buy-lifetime" target="_blank" rel="noopener">
-          <strong data-price="lifetime"></strong> <span data-price="lifetimeNote"></span>
-        </a>
-      </div>
-      <p class="muted small" id="buy-note">Secure checkout by Lemon Squeezy. You'll get a license key by email right after paying.</p>
-      <p class="muted small" id="not-on-sale" hidden>Pro is launching soon.</p>
-
-      <form class="license-form" id="license-form">
-        <label for="license-key">Already bought Pro? Enter your license key</label>
-        <div class="inline-row">
-          <input type="text" id="license-key" placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX" autocomplete="off" spellcheck="false">
-          <button type="submit" class="btn" id="license-activate">Activate</button>
-        </div>
-        <p class="license-error" id="license-error" hidden></p>
-      </form>
-    </div>
-
-    <div id="pro-active" hidden>
-      <p class="pro-ok">✓ Pro is active in this browser.</p>
-      <p class="muted small" id="pro-details"></p>
-      <button type="button" class="btn small" id="license-remove">Remove license from this browser</button>
-    </div>
-  </dialog>
-
-  <script src="config.js"></script>
   <script src="vendor/pdf-lib.min.js"></script>
   <script src="vendor/fontkit.umd.min.js"></script>
   <script src="vendor/fflate.min.js"></script>
-  <script src="watermark.js"></script>
-  <script src="license.js"></script>
-  <script src="app.js"></script>
+  <script src="watermark.js?v=20261030d"></script>
+  <script src="app.js?v=20261030d"></script>
 </body>
 </html>

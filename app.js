@@ -1,10 +1,8 @@
-/* Stampr UI. PDF work happens in watermark.js (StamprCore), licensing in license.js (StamprLicense). */
+/* Stampr UI. All PDF work happens in watermark.js (StamprCore); this file wires up the page. */
 (function () {
   'use strict';
 
   const core = window.StamprCore;
-  const License = window.StamprLicense;
-  const CONFIG = window.STAMPR_CONFIG || {};
   const SETTINGS_KEY = 'stampr.settings.v1';
   const PROFILES_KEY = 'stampr.profiles.v1';
   const $ = (id) => document.getElementById(id);
@@ -36,11 +34,6 @@
     previewTitle: $('preview-title'), pager: $('pager'), prev: $('prev-page'), next: $('next-page'), pageLabel: $('page-label'),
     placeholder: $('placeholder'), canvas: $('preview-canvas'), spinner: $('spinner'), warning: $('preview-warning'),
     stage: $('preview-stage'),
-    proBtn: $('pro-btn'), proDialog: $('pro-dialog'), proReason: $('pro-reason'),
-    proBuy: $('pro-buy'), proActive: $('pro-active'), proDetails: $('pro-details'),
-    buyYearly: $('buy-yearly'), buyLifetime: $('buy-lifetime'), buyNote: $('buy-note'), notOnSale: $('not-on-sale'),
-    licenseForm: $('license-form'), licenseKey: $('license-key'), licenseActivate: $('license-activate'),
-    licenseError: $('license-error'), licenseRemove: $('license-remove'),
   };
 
   const state = {
@@ -128,20 +121,7 @@
     if (core.hasFields(el.text.value)) el.fieldsBox.open = true;
   }
 
-  function proFeaturesUsed(settings, fileCount) {
-    const used = [];
-    if (fileCount > 1) used.push('Multiple files');
-    if (settings.type === 'image') used.push('Image watermarks');
-    if (settings.type === 'text' && core.hasFields(settings.text)) used.push('Stamp fields');
-    if (settings.permanent) used.push('Permanent watermarks');
-    return used;
-  }
-
-  function listJoin(items) {
-    return items.length < 2 ? items.join('') : items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
-  }
-
-  // ---------- profiles (Pro) ----------
+  // ---------- profiles ----------
 
   function loadProfiles() {
     try { return JSON.parse(localStorage.getItem(PROFILES_KEY) || '{}'); } catch (e) { return {}; }
@@ -392,9 +372,6 @@
       updatePreview();
     }
     if (failed.length) showMessage('error', (failed.length === 1 ? 'Could not open ' : 'Could not open these files: ') + failed.join('; '));
-    else if (state.files.length > 1 && !License.isPro()) {
-      showMessage('info', 'Stamping several files at once is a Pro feature. You can preview them all for free.');
-    }
   }
 
   function renderFiles() {
@@ -488,70 +465,6 @@
     }
   }
 
-  // ---------- Pro dialog ----------
-
-  function fillPrices() {
-    const prices = CONFIG.prices || {};
-    document.querySelectorAll('[data-price]').forEach((n) => { n.textContent = prices[n.dataset.price] || ''; });
-  }
-
-  function renderPro() {
-    const pro = License.isPro();
-    document.body.classList.toggle('is-pro', pro);
-    el.proBtn.textContent = pro ? 'Pro ✓' : 'Get Pro';
-    el.proBuy.hidden = pro;
-    el.proActive.hidden = !pro;
-    const info = License.info();
-    if (pro && info) {
-      const masked = info.key.length > 8 ? info.key.slice(0, 4) + '…' + info.key.slice(-4) : info.key;
-      el.proDetails.textContent = `${info.product || 'Stampr Pro'} · key ${masked}` +
-        (info.expiresAt ? ` · renews or expires ${String(info.expiresAt).slice(0, 10)}` : '');
-    }
-    const ls = CONFIG.lemonSqueezy || {};
-    const onSale = License.configured() && ls.checkoutYearly && ls.checkoutLifetime;
-    el.buyYearly.href = ls.checkoutYearly || '#';
-    el.buyLifetime.href = ls.checkoutLifetime || '#';
-    [el.buyYearly, el.buyLifetime].forEach((a) => a.classList.toggle('disabled', !onSale));
-    el.buyNote.hidden = !onSale;
-    el.notOnSale.hidden = !!onSale;
-  }
-
-  function openPro(reason) {
-    el.proReason.textContent = reason || '';
-    el.proReason.hidden = !reason;
-    el.licenseError.hidden = true;
-    renderPro();
-    if (!el.proDialog.open) el.proDialog.showModal();
-  }
-
-  // Shows the Pro dialog and returns false when the user isn't Pro.
-  function requirePro(features) {
-    if (License.isPro()) return true;
-    const info = License.info();
-    const lapsed = info && info.reason ? ' ' + info.reason : '';
-    openPro(`${listJoin(features)} ${features.length > 1 ? 'are Pro features' : 'is a Pro feature'}.${lapsed}`);
-    return false;
-  }
-
-  async function activateKey(key) {
-    el.licenseError.hidden = true;
-    el.licenseActivate.disabled = true;
-    el.licenseActivate.textContent = 'Checking…';
-    try {
-      await License.activate(key);
-      el.licenseKey.value = '';
-      el.proReason.hidden = true;
-      renderPro();
-      showMessage('ok', 'Stampr Pro is now active in this browser. Thank you!');
-    } catch (e) {
-      el.licenseError.textContent = e.message;
-      el.licenseError.hidden = false;
-    } finally {
-      el.licenseActivate.disabled = false;
-      el.licenseActivate.textContent = 'Activate';
-    }
-  }
-
   // ---------- mode ----------
 
   function setMode(mode) {
@@ -571,9 +484,6 @@
     el.font.add(new Option('Custom font (.ttf / .otf)…', 'custom'));
     writeSettings(loadSettings());
     renderProfiles();
-    fillPrices();
-    renderPro();
-    License.onChange(renderPro);
 
     el.tabs.forEach((t) => t.addEventListener('click', () => setMode(t.dataset.mode)));
 
@@ -643,7 +553,6 @@
       if (p) { writeSettings(p); saveSettings(readSettings()); schedulePreview(0); }
     });
     el.profileSave.addEventListener('click', () => {
-      if (!requirePro(['Saved profiles'])) return;
       const name = (window.prompt('Name this profile (e.g. "Review stamp – Project X"):', el.profileSelect.value || '') || '').trim();
       if (!name) return;
       const profiles = loadProfiles();
@@ -688,8 +597,6 @@
 
     el.downloadAdd.addEventListener('click', () => {
       const settings = readSettings();
-      const pro = proFeaturesUsed(settings, state.files.length);
-      if (pro.length && !requirePro(pro)) return;
       withBusy(el.downloadAdd, 'Working…', async (progress) => {
         clearMessage();
         const outputs = [], failed = [], overflow = [];
@@ -720,7 +627,6 @@
     });
 
     el.runRemove.addEventListener('click', () => {
-      if (state.files.length > 1 && !requirePro(['Multiple files'])) return;
       withBusy(el.runRemove, 'Removing…', async (progress) => {
         clearMessage();
         const results = [];
@@ -756,30 +662,6 @@
         .map(({ r, f }) => ({ name: outName(f.name, 'no-watermark'), bytes: r.bytes }));
       deliver(outputs, 'stampr-cleaned.zip');
     });
-
-    // Pro
-    el.proBtn.addEventListener('click', () => openPro());
-    document.querySelectorAll('[data-open-pro]').forEach((b) => b.addEventListener('click', () => openPro()));
-    [el.buyYearly, el.buyLifetime].forEach((a) => a.addEventListener('click', (e) => {
-      if (a.classList.contains('disabled')) e.preventDefault();
-    }));
-    el.licenseForm.addEventListener('submit', (e) => { e.preventDefault(); activateKey(el.licenseKey.value); });
-    el.licenseRemove.addEventListener('click', async () => {
-      if (!window.confirm('Remove Stampr Pro from this browser? You can activate the same key again later.')) return;
-      await License.deactivate();
-      renderPro();
-    });
-
-    // Coming back from checkout: wstampr.com/?license=KEY activates straight away.
-    const params = new URLSearchParams(location.search);
-    const keyParam = params.get('license') || params.get('license_key');
-    if (keyParam) {
-      history.replaceState(null, '', location.pathname + location.hash);
-      openPro();
-      el.licenseKey.value = keyParam;
-      if (!License.isPro()) activateKey(keyParam);
-    }
-    License.refresh().then(renderPro);
 
     let resizeTimer = null;
     window.addEventListener('resize', () => {
